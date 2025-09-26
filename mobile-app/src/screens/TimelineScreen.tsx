@@ -112,13 +112,10 @@ const TimelineScreen: React.FC<TimelineScreenProps> = ({
     }
   }, [selectedMovement, navigation]);
 
-  // Handle zoom controls (for future expansion)
-  const handleZoomIn = useCallback(() => {
-    setZoomLevel(prev => Math.min(prev * 1.5, 3));
-  }, []);
 
-  const handleZoomOut = useCallback(() => {
-    setZoomLevel(prev => Math.max(prev / 1.5, 0.5));
+  // Handle zoom changes from pinch gesture
+  const handleZoomChange = useCallback((newZoomLevel: number) => {
+    setZoomLevel(newZoomLevel);
   }, []);
 
   return (
@@ -133,26 +130,9 @@ const TimelineScreen: React.FC<TimelineScreenProps> = ({
         onVisibleRangeChange={handleVisibleRangeChange}
         showTimeIndicator={false} // Disabled floating indicator
         zoomLevel={zoomLevel}
+        onZoomChange={handleZoomChange}
       />
 
-      {/* Zoom Controls */}
-      <View style={styles.zoomControls}>
-        <TouchableOpacity
-          style={[styles.zoomButton, zoomLevel <= 0.5 && styles.zoomButtonDisabled]}
-          onPress={handleZoomOut}
-          disabled={zoomLevel <= 0.5}
-        >
-          <Text style={styles.zoomButtonText}>−</Text>
-        </TouchableOpacity>
-        <Text style={styles.zoomLevel}>{zoomLevel.toFixed(1)}x</Text>
-        <TouchableOpacity
-          style={[styles.zoomButton, zoomLevel >= 3 && styles.zoomButtonDisabled]}
-          onPress={handleZoomIn}
-          disabled={zoomLevel >= 3}
-        >
-          <Text style={styles.zoomButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Movement Detail Modal */}
       {selectedMovement && (
@@ -356,50 +336,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#666',
     marginTop: 2,
-  },
-  zoomControls: {
-    position: 'absolute',
-    right: 20,
-    bottom: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 25,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  zoomButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  zoomButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  zoomButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
-  zoomLevel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginHorizontal: 12,
-    minWidth: 30,
-    textAlign: 'center',
   },
 });
 

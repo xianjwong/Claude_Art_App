@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
 } from 'react-native';
+import { PinchGestureHandler, State } from 'react-native-gesture-handler';
 import { Movement, TimePeriod } from '../types';
 import {
   calculateTimelineHeight,
@@ -29,6 +30,7 @@ interface TimelineProps {
   timeIndicatorPosition?: 'top' | 'bottom';
   initialYear?: number;
   zoomLevel?: number;
+  onZoomChange?: (newZoomLevel: number) => void;
 }
 
 const Timeline: React.FC<TimelineProps> = ({
@@ -40,6 +42,7 @@ const Timeline: React.FC<TimelineProps> = ({
   timeIndicatorPosition = 'top',
   initialYear,
   zoomLevel = 1,
+  onZoomChange,
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -118,6 +121,23 @@ const Timeline: React.FC<TimelineProps> = ({
     updateVisibleRange(scrollOffset);
   }, [zoomLevel, scrollOffset, updateVisibleRange]);
 
+  // Handle pinch gesture for zoom
+  const baseZoomLevel = useRef(zoomLevel);
+
+  const handlePinchGestureEvent = useCallback((event: any) => {
+    if (onZoomChange) {
+      const { scale } = event.nativeEvent;
+      const newZoomLevel = Math.max(0.5, Math.min(3, baseZoomLevel.current * scale));
+      onZoomChange(newZoomLevel);
+    }
+  }, [onZoomChange]);
+
+  const handlePinchGestureStateChange = useCallback((event: any) => {
+    if (event.nativeEvent.state === State.BEGAN) {
+      baseZoomLevel.current = zoomLevel;
+    }
+  }, [zoomLevel]);
+
   return (
     <View style={styles.container} testID="timeline-container">
       {showTimeIndicator && (
@@ -127,36 +147,41 @@ const Timeline: React.FC<TimelineProps> = ({
         />
       )}
 
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.contentContainer,
-          { height: timelineHeight }
-        ]}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={true}
-        testID="timeline-scroll-view"
+      <PinchGestureHandler
+        onGestureEvent={handlePinchGestureEvent}
+        onHandlerStateChange={handlePinchGestureStateChange}
       >
-        <View style={styles.timelineContent}>
-          {/* Half-century markers */}
-          {generateHalfCenturyMarkers()}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.contentContainer,
+            { height: timelineHeight }
+          ]}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={true}
+          testID="timeline-scroll-view"
+        >
+          <View style={styles.timelineContent}>
+            {/* Half-century markers */}
+            {generateHalfCenturyMarkers()}
 
-          {/* Movement bars */}
-          {movements.map((movement, index) => (
-            <MovementBar
-              key={movement.id}
-              movement={movement}
-              timeRange={timeRange}
-              columnIndex={columnAssignments[index]}
-              onPress={onMovementPress}
-              barWidth={20 * zoomLevel}
-              config={zoomedConfig}
-            />
-          ))}
-        </View>
-      </ScrollView>
+            {/* Movement bars */}
+            {movements.map((movement, index) => (
+              <MovementBar
+                key={movement.id}
+                movement={movement}
+                timeRange={timeRange}
+                columnIndex={columnAssignments[index]}
+                onPress={onMovementPress}
+                barWidth={20 * zoomLevel}
+                config={zoomedConfig}
+              />
+            ))}
+          </View>
+        </ScrollView>
+      </PinchGestureHandler>
     </View>
   );
 };
